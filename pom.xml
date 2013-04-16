@@ -17,6 +17,11 @@
         </license>
     </licenses>
 
+    <scm>
+        <connection>scm:git:git@github.com:SYNAXON/logstash-util-formatter.git</connection>
+        <developerConnection>scm:git:git@github.com:SYNAXON/logstash-util-formatter.git</developerConnection>
+    </scm>
+
     <parent>
         <groupId>org.sonatype.oss</groupId>
         <artifactId>oss-parent</artifactId>
