@@ -78,7 +78,7 @@ public class LogstashUtilFormatter extends Formatter {
             builder.add("method", "null");
         }
         if (record.getThrown() != null) {
-            builder.add("exception", encodeStacktrace(record));
+            encodeStacktrace(record, builder);
         }
         return builder;
     }
@@ -87,25 +87,25 @@ public class LogstashUtilFormatter extends Formatter {
      * Format the stackstrace.
      *
      * @param record the logrecord which contains the stacktrace
-     * @return objectBuilder
+     * @param builder the json object builder to append
      */
-    protected JsonObjectBuilder encodeStacktrace(LogRecord record) {
-        JsonObjectBuilder builder = BUILDER.createObjectBuilder();
+    protected void encodeStacktrace(LogRecord record, JsonObjectBuilder builder) {
         if (record.getThrown() != null) {
             if (record.getSourceClassName() != null) {
                 builder.add("exception_class", record.getThrown().getClass().getName());
             }
-            builder.add("exception_message", record.getThrown().getMessage());
-            StringBuilder strace = new StringBuilder();
+            if (record.getThrown().getMessage() != null) {
+                builder.add("exception_message", record.getThrown().getMessage());
+            }
             if (record.getThrown().getStackTrace().length > 0) {
+                StringBuilder strace = new StringBuilder();
                 StackTraceElement[] traces = record.getThrown().getStackTrace();
                 for (StackTraceElement trace : traces) {
                     strace.append("\t").append(trace.toString()).append("\n");
                 }
+                builder.add("stacktrace", strace.toString());
             }
-            builder.add("stacktrace", strace.toString());
         }
-        return builder;
     }
 
     /**
