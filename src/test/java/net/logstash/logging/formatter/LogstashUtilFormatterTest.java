@@ -82,13 +82,15 @@ public class LogstashUtilFormatterTest {
         fieldsBuilder.add("line_number", LINE_NUMBER);
         fieldsBuilder.add("class", LogstashUtilFormatter.class.getName());
         fieldsBuilder.add("method", "testMethod");
+        fieldsBuilder.add("exception_class", ex.getClass().getName());
+        fieldsBuilder.add("exception_message", ex.getMessage());
+        fieldsBuilder.add("stacktrace", "\t" + stackTrace[0].toString() + "\n");
 
         exceptionBuilder = Json.createBuilderFactory(null).createObjectBuilder();
         exceptionBuilder.add("exception_class", ex.getClass().getName());
         exceptionBuilder.add("exception_message", ex.getMessage());
         exceptionBuilder.add("stacktrace", "\t" + stackTrace[0].toString() + "\n");
 
-        fieldsBuilder.add("exception", exceptionBuilder);
 
         builder.add("@fields", fieldsBuilder);
 
@@ -119,7 +121,8 @@ public class LogstashUtilFormatterTest {
      */
     @Test
     public void testEncodeStacktrace() {
-        JsonObjectBuilder result = instance.encodeStacktrace(record);
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        instance.encodeStacktrace(record, result);
         assertEquals(exceptionBuilder.build().toString(), result.build().toString());
     }
 
