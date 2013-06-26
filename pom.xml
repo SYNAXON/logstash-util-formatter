@@ -127,6 +127,20 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>org.joda.time</pattern>
+                            <shadedPattern>${project.groupId}.logstashutilformatter.org.joda.time</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>javax.json</pattern>
+                            <shadedPattern>${project.groupId}.logstashutilformatter.javax.json</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>org.glassfish.json</pattern>
+                            <shadedPattern>${project.groupId}.logstashutilformatter.org.glassfish.json</shadedPattern>
+                        </relocation>
+                    </relocations>
                     <shadedArtifactAttached>true</shadedArtifactAttached>
                 </configuration>
             </plugin>
