@@ -24,6 +24,7 @@ import java.util.logging.LogRecord;
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
+import org.joda.time.format.ISODateTimeFormat;
 
 /**
  *
@@ -31,7 +32,7 @@ import javax.json.JsonObjectBuilder;
 public class LogstashUtilFormatter extends Formatter {
 
     private static final JsonBuilderFactory BUILDER = Json.createBuilderFactory(null);
-    private static final SimpleDateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
+
     private static String hostName;
 
     static {
@@ -44,7 +45,7 @@ public class LogstashUtilFormatter extends Formatter {
 
     @Override
     public String format(LogRecord record) {
-        String dateString = DATE_FORMAT.format(new Date(record.getMillis()));
+        String dateString = ISODateTimeFormat.dateTime().print(record.getMillis());
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)

@@ -23,6 +23,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,8 +71,8 @@ public class LogstashUtilFormatterTest {
         record.setThrown(ex);
 
         builder = Json.createBuilderFactory(null).createObjectBuilder();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
-        String dateString = formatter.format(new Date(millis));
+        DateTimeFormatter formatter = ISODateTimeFormat.dateTime();
+        String dateString = formatter.print(millis);
         builder.add("@timestamp", dateString);
         builder.add("@message", "Junit Test");
         builder.add("@source", LogstashUtilFormatter.class.getName());
