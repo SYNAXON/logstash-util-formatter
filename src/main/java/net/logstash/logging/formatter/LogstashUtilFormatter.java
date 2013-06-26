@@ -63,24 +63,14 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the log record
      * @return objectBuilder
      */
-    protected JsonObjectBuilder encodeFields(LogRecord record) {
+    JsonObjectBuilder encodeFields(LogRecord record) {
         JsonObjectBuilder builder = BUILDER.createObjectBuilder();
         builder.add("timestamp", record.getMillis());
         builder.add("level", record.getLevel().toString());
         builder.add("line_number", getLineNumber(record));
-        if (record.getSourceClassName() != null) {
-            builder.add("class", record.getSourceClassName());
-        } else {
-            builder.add("class", "null");
-        }
-        if (record.getSourceMethodName() != null) {
-            builder.add("method", record.getSourceMethodName());
-        } else {
-            builder.add("method", "null");
-        }
-        if (record.getThrown() != null) {
-            encodeStacktrace(record, builder);
-        }
+        addSourceClassName(record, builder);
+        addSourceMethodName(record, builder);
+        addThrowableInfo(record, builder);
         return builder;
     }
 
@@ -90,7 +80,7 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the logrecord which contains the stacktrace
      * @param builder the json object builder to append
      */
-    protected void encodeStacktrace(LogRecord record, JsonObjectBuilder builder) {
+    void addThrowableInfo(LogRecord record, JsonObjectBuilder builder) {
         if (record.getThrown() != null) {
             if (record.getSourceClassName() != null) {
                 builder.add("exception_class", record.getThrown().getClass().getName());
@@ -98,14 +88,7 @@ public class LogstashUtilFormatter extends Formatter {
             if (record.getThrown().getMessage() != null) {
                 builder.add("exception_message", record.getThrown().getMessage());
             }
-            if (record.getThrown().getStackTrace().length > 0) {
-                StringBuilder strace = new StringBuilder();
-                StackTraceElement[] traces = record.getThrown().getStackTrace();
-                for (StackTraceElement trace : traces) {
-                    strace.append("\t").append(trace.toString()).append("\n");
-                }
-                builder.add("stacktrace", strace.toString());
-            }
+            addStacktraceElements(record, builder);
         }
     }
 
@@ -115,14 +98,50 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the logrecord
      * @return the line number
      */
-    protected int getLineNumber(LogRecord record) {
-        int lineNumber = 0;
+    int getLineNumber(LogRecord record) {
+        final int lineNumber;
         if (record.getThrown() != null) {
-            StackTraceElement[] traces = record.getThrown().getStackTrace();
-            if (traces.length > 0 && traces[0] != null) {
-                lineNumber = traces[0].getLineNumber();
-            }
+            lineNumber = getLineNumberFromStackTrace(record.getThrown().getStackTrace());
+        } else {
+            lineNumber = 0;
         }
         return lineNumber;
+    }
+
+    int getLineNumberFromStackTrace(final StackTraceElement[] traces) {
+        final int lineNumber;
+        if (traces.length > 0 && traces[0] != null) {
+            lineNumber = traces[0].getLineNumber();
+        } else {
+            lineNumber = 0;
+        }
+        return lineNumber;
+    }
+
+    private void addSourceMethodName(LogRecord record, JsonObjectBuilder builder) {
+        addValue(builder, "method", record.getSourceMethodName());
+    }
+
+    private void addSourceClassName(LogRecord record, JsonObjectBuilder builder) {
+        addValue(builder, "class", record.getSourceClassName());
+    }
+
+    private void addStacktraceElements(LogRecord record, JsonObjectBuilder builder) {
+        final StackTraceElement[] traces = record.getThrown().getStackTrace();
+        if (traces.length > 0) {
+            StringBuilder strace = new StringBuilder();
+            for (StackTraceElement trace : traces) {
+                strace.append("\t").append(trace.toString()).append("\n");
+            }
+            builder.add("stacktrace", strace.toString());
+        }
+    }
+
+    void addValue(JsonObjectBuilder builder, final String key, final String value) {
+        if (value != null) {
+            builder.add(key, value);
+        } else {
+            builder.add(key, "null");
+        }
     }
 }
