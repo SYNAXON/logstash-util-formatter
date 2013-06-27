@@ -17,8 +17,6 @@ package net.logstash.logging.formatter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import javax.json.Json;
