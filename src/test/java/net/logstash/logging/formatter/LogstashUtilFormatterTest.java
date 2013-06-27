@@ -17,8 +17,6 @@ package net.logstash.logging.formatter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.json.Json;
@@ -147,6 +145,30 @@ public class LogstashUtilFormatterTest {
         record.getThrown().setStackTrace(new StackTraceElement[0]);
         instance.addThrowableInfo(record, result);
         assertEquals("{\"exception_class\":\"java.lang.Exception\",\"exception_message\":\"That is an exception\"}", result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoThrowableAttachedButWithoutSourceClassName() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        record.setSourceClassName(null);
+        instance.addThrowableInfo(record, result);
+        assertEquals("{\"exception_message\":\"That is an exception\"}", result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoThrowableAttachedButWithoutMessage() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        record.setThrown(new Exception());
+        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        instance.addThrowableInfo(record, result);
+        assertEquals("{\"exception_class\":\"java.lang.Exception\"}", result.build().toString());
     }
 
     /**
