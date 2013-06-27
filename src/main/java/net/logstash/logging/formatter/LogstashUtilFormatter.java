@@ -29,7 +29,8 @@ import org.joda.time.format.ISODateTimeFormat;
  */
 public class LogstashUtilFormatter extends Formatter {
 
-    private static final JsonBuilderFactory BUILDER = Json.createBuilderFactory(null);
+    private static final JsonBuilderFactory BUILDER = 
+            Json.createBuilderFactory(null);
 
     private static String hostName;
 
@@ -42,8 +43,9 @@ public class LogstashUtilFormatter extends Formatter {
     }
 
     @Override
-    public String format(LogRecord record) {
-        String dateString = ISODateTimeFormat.dateTime().print(record.getMillis());
+    public final String format(final LogRecord record) {
+        String dateString = ISODateTimeFormat.dateTime().print(
+                record.getMillis());
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)
@@ -61,7 +63,7 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the log record
      * @return objectBuilder
      */
-    JsonObjectBuilder encodeFields(LogRecord record) {
+    final JsonObjectBuilder encodeFields(final LogRecord record) {
         JsonObjectBuilder builder = BUILDER.createObjectBuilder();
         builder.add("timestamp", record.getMillis());
         builder.add("level", record.getLevel().toString());
@@ -78,13 +80,15 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the logrecord which contains the stacktrace
      * @param builder the json object builder to append
      */
-    void addThrowableInfo(LogRecord record, JsonObjectBuilder builder) {
+    final void addThrowableInfo(final LogRecord record, final JsonObjectBuilder builder) {
         if (record.getThrown() != null) {
             if (record.getSourceClassName() != null) {
-                builder.add("exception_class", record.getThrown().getClass().getName());
+                builder.add("exception_class",
+                        record.getThrown().getClass().getName());
             }
             if (record.getThrown().getMessage() != null) {
-                builder.add("exception_message", record.getThrown().getMessage());
+                builder.add("exception_message",
+                        record.getThrown().getMessage());
             }
             addStacktraceElements(record, builder);
         }
@@ -96,17 +100,23 @@ public class LogstashUtilFormatter extends Formatter {
      * @param record the logrecord
      * @return the line number
      */
-    int getLineNumber(LogRecord record) {
+    final int getLineNumber(final LogRecord record) {
         final int lineNumber;
         if (record.getThrown() != null) {
-            lineNumber = getLineNumberFromStackTrace(record.getThrown().getStackTrace());
+            lineNumber = getLineNumberFromStackTrace(
+                    record.getThrown().getStackTrace());
         } else {
             lineNumber = 0;
         }
         return lineNumber;
     }
 
-    int getLineNumberFromStackTrace(final StackTraceElement[] traces) {
+    /**
+     * Gets line number from stack trace.
+     * @param traces all stack trace elements
+     * @return line number of the first stacktrace.
+     */
+    final int getLineNumberFromStackTrace(final StackTraceElement[] traces) {
         final int lineNumber;
         if (traces.length > 0 && traces[0] != null) {
             lineNumber = traces[0].getLineNumber();
@@ -116,15 +126,23 @@ public class LogstashUtilFormatter extends Formatter {
         return lineNumber;
     }
 
-    private void addSourceMethodName(LogRecord record, JsonObjectBuilder builder) {
+    final void addValue(final JsonObjectBuilder builder, final String key, final String value) {
+        if (value != null) {
+            builder.add(key, value);
+        } else {
+            builder.add(key, "null");
+        }
+    }
+
+    private void addSourceMethodName(final LogRecord record, final JsonObjectBuilder builder) {
         addValue(builder, "method", record.getSourceMethodName());
     }
 
-    private void addSourceClassName(LogRecord record, JsonObjectBuilder builder) {
+    private void addSourceClassName(final LogRecord record, final JsonObjectBuilder builder) {
         addValue(builder, "class", record.getSourceClassName());
     }
 
-    private void addStacktraceElements(LogRecord record, JsonObjectBuilder builder) {
+    private void addStacktraceElements(final LogRecord record, final JsonObjectBuilder builder) {
         final StackTraceElement[] traces = record.getThrown().getStackTrace();
         if (traces.length > 0) {
             StringBuilder strace = new StringBuilder();
@@ -132,14 +150,6 @@ public class LogstashUtilFormatter extends Formatter {
                 strace.append("\t").append(trace.toString()).append("\n");
             }
             builder.add("stacktrace", strace.toString());
-        }
-    }
-
-    void addValue(JsonObjectBuilder builder, final String key, final String value) {
-        if (value != null) {
-            builder.add(key, value);
-        } else {
-            builder.add(key, "null");
         }
     }
 }
