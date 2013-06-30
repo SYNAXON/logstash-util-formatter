@@ -6,7 +6,7 @@
     <version>1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
     <name>logstash-util-formatter</name>
-    <description>Log4j pattern layout that conforms to the logstash json_event format</description>
+    <description>java.util.logging Formatter that conforms to the logstash json_event format</description>
     <url>http://logstash.net</url>
     <licenses>
         <license>
