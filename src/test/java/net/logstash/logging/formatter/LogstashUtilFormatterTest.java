@@ -17,12 +17,12 @@ package net.logstash.logging.formatter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.ISODateTimeFormat;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,8 +69,8 @@ public class LogstashUtilFormatterTest {
         record.setThrown(ex);
 
         builder = Json.createBuilderFactory(null).createObjectBuilder();
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZZ");
-        String dateString = formatter.format(new Date(millis));
+        DateTimeFormatter formatter = ISODateTimeFormat.dateTime();
+        String dateString = formatter.print(millis);
         builder.add("@timestamp", dateString);
         builder.add("@message", "Junit Test");
         builder.add("@source", LogstashUtilFormatter.class.getName());
@@ -117,13 +117,58 @@ public class LogstashUtilFormatterTest {
     }
 
     /**
-     * Test of encodeStacktrace method, of class LogstashFormatter.
+     * Test of addThrowableInfo method, of class LogstashFormatter.
      */
     @Test
-    public void testEncodeStacktrace() {
+    public void testAddThrowableInfo() {
         JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
-        instance.encodeStacktrace(record, result);
+        instance.addThrowableInfo(record, result);
         assertEquals(exceptionBuilder.build().toString(), result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoNoThrowableAttached() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        instance.addThrowableInfo(new LogRecord(Level.OFF, hostName), result);
+        assertEquals("{}", result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoThrowableAttachedButWithoutStackTrace() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        instance.addThrowableInfo(record, result);
+        assertEquals("{\"exception_class\":\"java.lang.Exception\",\"exception_message\":\"That is an exception\"}", result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoThrowableAttachedButWithoutSourceClassName() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        record.setSourceClassName(null);
+        instance.addThrowableInfo(record, result);
+        assertEquals("{\"exception_message\":\"That is an exception\"}", result.build().toString());
+    }
+
+    /**
+     * Test of addThrowableInfo method, of class LogstashFormatter.
+     */
+    @Test
+    public void testAddThrowableInfoThrowableAttachedButWithoutMessage() {
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
+        record.setThrown(new Exception());
+        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        instance.addThrowableInfo(record, result);
+        assertEquals("{\"exception_class\":\"java.lang.Exception\"}", result.build().toString());
     }
 
     /**
@@ -133,5 +178,42 @@ public class LogstashUtilFormatterTest {
     public void testGetLineNumber() {
         int result = instance.getLineNumber(record);
         assertEquals(LINE_NUMBER, result);
+    }
+
+    /**
+     * Test of getLineNumber method, of class LogstashFormatter.
+     */
+    @Test
+    public void testGetLineNumberNoThrown() {
+        assertEquals(0, instance.getLineNumber(new LogRecord(Level.OFF, "foo")));
+    }
+
+    /**
+     * Test of getLineNumberFromStackTrace method, of class LogstashUtilFormatter.
+     */
+    @Test
+    public void testGetLineNumberFromStackTrace() {
+        assertEquals(0, instance.getLineNumberFromStackTrace(new StackTraceElement[0]));
+        assertEquals(0, instance.getLineNumberFromStackTrace(new StackTraceElement[]{null}));
+    }
+
+    /**
+     * Test of addValue method, of class LogstashUtilFormatter.
+     */
+    @Test
+    public void testAddValue() {
+        JsonObjectBuilder builder = Json.createBuilderFactory(null).createObjectBuilder();
+        instance.addValue(builder, "key", "value");
+        assertEquals("{\"key\":\"value\"}", builder.build().toString());
+    }
+
+    /**
+     * Test of addValue method, of class LogstashUtilFormatter.
+     */
+    @Test
+    public void testAddNullValue() {
+        JsonObjectBuilder builder = Json.createBuilderFactory(null).createObjectBuilder();
+        instance.addValue(builder, "key", null);
+        assertEquals("{\"key\":\"null\"}", builder.build().toString());
     }
 }
