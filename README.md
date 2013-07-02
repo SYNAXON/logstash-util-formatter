@@ -57,6 +57,7 @@ java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter
 
 ```
 JAVA_ARGS="$JAVA_ARGS -Djava.endorsed.dirs=$JENKINS_HOME/lib -Djava.util.logging.config.file=$JENKINS_HOME/lib/logging.properties"
+JAVA_ARGS="$JAVA_ARGS -Dnet.logstash.logging.formatter.LogstashUtilFormatter.tags=master,mailer"
 ```
 
 * Use it in your logstash configuration like this:
@@ -70,3 +71,5 @@ input {
   }
 }
 ```
+* By setting the system propery `net.logstash.logging.formatter.LogstashUtilFormatter.tags` you may easily add tags,
+which let you differentiate between multiple instances running on the same host.

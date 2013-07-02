@@ -22,6 +22,7 @@ import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
 import static org.junit.Assert.*;
 import org.junit.Before;
@@ -43,6 +44,7 @@ public class LogstashUtilFormatterTest {
     private static String hostName;
 
     static {
+        System.setProperty("net.logstash.logging.formatter.LogstashUtilFormatter.tags", "foo,bar");
         try {
             hostName = InetAddress.getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -91,8 +93,12 @@ public class LogstashUtilFormatterTest {
         exceptionBuilder.add("exception_message", ex.getMessage());
         exceptionBuilder.add("stacktrace", "\t" + stackTrace[0].toString() + "\n");
 
-
         builder.add("@fields", fieldsBuilder);
+
+        JsonArrayBuilder tagsBuilder = Json.createArrayBuilder();
+        tagsBuilder.add("foo");
+        tagsBuilder.add("bar");
+        builder.add("@tags", tagsBuilder.build());
 
         fullLogMessage = builder.build().toString() + "\n";
     }
