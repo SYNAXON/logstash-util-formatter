@@ -17,12 +17,13 @@ package net.logstash.logging.formatter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import javax.json.Json;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
-import org.joda.time.format.ISODateTimeFormat;
 
 /**
  *
@@ -33,6 +34,7 @@ public class LogstashUtilFormatter extends Formatter {
             Json.createBuilderFactory(null);
 
     private static String hostName;
+    static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
     static {
         try {
@@ -44,8 +46,8 @@ public class LogstashUtilFormatter extends Formatter {
 
     @Override
     public final String format(final LogRecord record) {
-        String dateString = ISODateTimeFormat.dateTime().print(
-                record.getMillis());
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+        final String dateString = dateFormat.format(new Date(record.getMillis()));
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)

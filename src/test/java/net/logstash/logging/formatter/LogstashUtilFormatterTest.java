@@ -17,12 +17,12 @@ package net.logstash.logging.formatter;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import javax.json.Json;
 import javax.json.JsonObjectBuilder;
-import org.joda.time.format.DateTimeFormatter;
-import org.joda.time.format.ISODateTimeFormat;
 import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
@@ -69,8 +69,8 @@ public class LogstashUtilFormatterTest {
         record.setThrown(ex);
 
         builder = Json.createBuilderFactory(null).createObjectBuilder();
-        DateTimeFormatter formatter = ISODateTimeFormat.dateTime();
-        String dateString = formatter.print(millis);
+        final SimpleDateFormat dateFormat = new SimpleDateFormat(LogstashUtilFormatter.DATE_FORMAT);
+        String dateString = dateFormat.format(new Date(millis));
         builder.add("@timestamp", dateString);
         builder.add("@message", "Junit Test");
         builder.add("@source", LogstashUtilFormatter.class.getName());
