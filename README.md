@@ -1,5 +1,7 @@
 # Java Util Logging JSON encoder for Logstash
 
+## Include as a dependency
+
 First, add it to your project as a dependency.
 
 Maven style:
@@ -31,3 +33,43 @@ input {
   }
 }
 ```
+
+## Example usage in Jenkins on Debian
+
+* Create a directory in `JENKINS_HOME`: `mkdir /var/lib/jenkins/lib`
+* Copy the shaded jar to this directory.
+* Create a `logging.properties` in `/var/lib/jenkins/lib`:
+
+```
+handlers= java.util.logging.ConsoleHandler,java.util.logging.FileHandler
+.level= INFO
+
+java.util.logging.FileHandler.level = INFO
+java.util.logging.FileHandler.formatter = net.logstash.logging.formatter.LogstashUtilFormatter
+java.util.logging.FileHandler.pattern = /var/log/jenkins/logstash.log
+java.util.logging.FileHandler.limit = 5000000
+java.util.logging.FileHandler.count = 1
+
+java.util.logging.ConsoleHandler.level = INFO
+java.util.logging.ConsoleHandler.formatter = java.util.logging.SimpleFormatter
+```
+* Extend `JAVA_ARGS` in `/etc/default/jenkins`:
+
+```
+JAVA_ARGS="$JAVA_ARGS -Djava.endorsed.dirs=$JENKINS_HOME/lib -Djava.util.logging.config.file=$JENKINS_HOME/lib/logging.properties"
+JAVA_ARGS="$JAVA_ARGS -Dnet.logstash.logging.formatter.LogstashUtilFormatter.tags=master,mailer"
+```
+
+* Use it in your logstash configuration like this:
+
+```
+input {
+  file {
+    type => "jenkins-server"
+    path => "/var/log/jenkins/logstash.log"
+    format => "json_event"
+  }
+}
+```
+* By setting the system propery `net.logstash.logging.formatter.LogstashUtilFormatter.tags` you may easily add tags,
+which let you differentiate between multiple instances running on the same host.
