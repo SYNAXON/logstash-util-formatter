@@ -22,18 +22,22 @@ import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
+import javax.json.JsonValue;
 
 /**
  *
  */
 public class LogstashUtilFormatter extends Formatter {
 
-    private static final JsonBuilderFactory BUILDER = 
+    private static final JsonBuilderFactory BUILDER =
             Json.createBuilderFactory(null);
-
     private static String hostName;
+    private static final String[] tags = System.getProperty(
+            "net.logstash.logging.formatter.LogstashUtilFormatter.tags", "UNKNOWN").split(",");
+
     static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
     static {
@@ -48,6 +52,10 @@ public class LogstashUtilFormatter extends Formatter {
     public final String format(final LogRecord record) {
         final SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
         final String dateString = dateFormat.format(new Date(record.getMillis()));
+        final JsonArrayBuilder tagsBuilder = BUILDER.createArrayBuilder();
+        for (final String tag : tags) {
+            tagsBuilder.add(tag);
+        }
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)
@@ -55,6 +63,7 @@ public class LogstashUtilFormatter extends Formatter {
                 .add("@source", record.getLoggerName())
                 .add("@source_host", hostName)
                 .add("@fields", encodeFields(record))
+                .add("@tags", tagsBuilder.build())
                 .build()
                 .toString() + "\n";
     }
