@@ -26,14 +26,17 @@ import java.util.logging.LogRecord;
 import com.google.gson.*;
 
 /**
- *
+ * Formats java.util.logging events for logstash
+ * @author James Stauffer
  */
 public class LogstashUtilFormatter extends Formatter {
 
-    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().setDateFormat(DateFormat.LONG).setPrettyPrinting().create();
-    //.registerTypeAdapter(Id.class, new IdTypeAdapter())
-    private static String hostName;
+    public LogstashUtilFormatter() {
+    }
+
     static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().setDateFormat(DATE_FORMAT).setPrettyPrinting().create();
+    private static String hostName;
 
     static {
         try {
@@ -53,10 +56,10 @@ public class LogstashUtilFormatter extends Formatter {
         jsonObject.addProperty("source", record.getLoggerName());
         jsonObject.addProperty("source_host", hostName);
         jsonObject.add("level", new JsonPrimitive(record.getLevel().toString()));
-        jsonObject.add("line_number", new JsonPrimitive(getLineNumber(record)));
         jsonObject.add("class", new JsonPrimitive(record.getSourceClassName()));
         jsonObject.add("method", new JsonPrimitive(record.getSourceMethodName()));
         if (record.getThrown() != null) {
+            jsonObject.add("line_number", new JsonPrimitive(getLineNumberFromStackTrace(record.getThrown().getStackTrace())));
             JsonObject jsonExceptionObject = new JsonObject();
 
             if (record.getSourceClassName() != null) {
@@ -77,23 +80,6 @@ public class LogstashUtilFormatter extends Formatter {
         }
         
         return gson.toJson(jsonObject) + "\n";
-    }
-
-    /**
-     * Get the line number of the exception.
-     *
-     * @param record the logrecord
-     * @return the line number
-     */
-    final private int getLineNumber(final LogRecord record) {
-        final int lineNumber;
-        if (record.getThrown() != null) {
-            lineNumber = getLineNumberFromStackTrace(
-                    record.getThrown().getStackTrace());
-        } else {
-            lineNumber = 0;
-        }
-        return lineNumber;
     }
 
     /**
