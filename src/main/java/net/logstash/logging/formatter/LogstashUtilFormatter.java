@@ -34,9 +34,9 @@ public class LogstashUtilFormatter extends Formatter {
     public LogstashUtilFormatter() {
     }
 
-    static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
-    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().setDateFormat(DATE_FORMAT).setPrettyPrinting().create();
+    private static final Gson gson = new GsonBuilder().enableComplexMapKeySerialization().create();
     private static String hostName;
+    static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
     static {
         try {

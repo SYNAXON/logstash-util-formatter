@@ -69,20 +69,20 @@ public class LogstashUtilFormatterTest {
     public void testFormat() {
         final SimpleDateFormat dateFormat = new SimpleDateFormat(LogstashUtilFormatter.DATE_FORMAT);
         final String dateString = dateFormat.format(new Date(record.getMillis()));
-        String expected = "{\n"
-            + "  \"timestamp\": \"" + dateString + "\",\n"
-            + "  \"message\": \"Junit Test\",\n"
-            + "  \"source\": \"net.logstash.logging.formatter.LogstashUtilFormatter\",\n"
-            + "  \"source_host\": \"" + hostName + "\",\n"
-            + "  \"level\": \"ALL\",\n"
-            + "  \"class\": \"net.logstash.logging.formatter.LogstashUtilFormatter\",\n"
-            + "  \"method\": \"testMethod\",\n"
-            + "  \"line_number\": " + LINE_NUMBER + ",\n"
-            + "  \"exception\": {\n"
-            + "    \"exception_class\": \"java.lang.Exception\",\n"
-            + "    \"exception_message\": \"That is an exception\",\n"
-            + "    \"stacktrace\": \"\\tTest.methodTest(Test.class:42)\\n\"\n"
-            + "  }\n"
+        String expected = "{"
+            + "\"timestamp\":\"" + dateString + "\","
+            + "\"message\":\"Junit Test\","
+            + "\"source\":\"net.logstash.logging.formatter.LogstashUtilFormatter\","
+            + "\"source_host\":\"" + hostName + "\","
+            + "\"level\":\"ALL\","
+            + "\"class\":\"net.logstash.logging.formatter.LogstashUtilFormatter\","
+            + "\"method\":\"testMethod\","
+            + "\"line_number\":" + LINE_NUMBER + ","
+            + "\"exception\":{"
+            + "\"exception_class\":\"java.lang.Exception\","
+            + "\"exception_message\":\"That is an exception\","
+            + "\"stacktrace\":\"\\tTest.methodTest(Test.class:42)\\n\""
+            + "}"
             + "}\n";
         assertEquals(expected, instance.format(record));
     }
