@@ -55,10 +55,11 @@ public class LogstashUtilFormatter extends Formatter {
         for (final String tag : tags) {
             tagsBuilder.add(tag);
         }
+        String message = formatMessage(record);
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)
-                .add("@message", record.getMessage())
+                .add("@message", message)
                 .add("@source", record.getLoggerName())
                 .add("@source_host", hostName)
                 .add("@fields", encodeFields(record))
