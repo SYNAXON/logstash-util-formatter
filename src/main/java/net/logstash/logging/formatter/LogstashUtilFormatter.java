@@ -15,12 +15,15 @@
  */
 package net.logstash.logging.formatter;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
@@ -154,13 +157,8 @@ public class LogstashUtilFormatter extends Formatter {
     }
 
     private void addStacktraceElements(final LogRecord record, final JsonObjectBuilder builder) {
-        final StackTraceElement[] traces = record.getThrown().getStackTrace();
-        if (traces.length > 0) {
-            StringBuilder strace = new StringBuilder();
-            for (StackTraceElement trace : traces) {
-                strace.append("\t").append(trace.toString()).append("\n");
-            }
-            builder.add("stacktrace", strace.toString());
-        }
+        final StringWriter sw = new StringWriter();
+        record.getThrown().printStackTrace(new PrintWriter(sw));
+        builder.add("stacktrace", sw.toString());
     }
 }
