@@ -19,12 +19,16 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.ListResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
+
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -114,7 +118,6 @@ public class LogstashUtilFormatterTest {
      */
     @Test
     public void testFormat() {
-        System.out.println("format");
         String result = instance.format(record);
         assertEquals(fullLogMessage, result);
     }
@@ -233,5 +236,62 @@ public class LogstashUtilFormatterTest {
         JsonObjectBuilder builder = Json.createBuilderFactory(null).createObjectBuilder();
         instance.addValue(builder, "key", null);
         assertEquals("{\"key\":\"null\"}", builder.build().toString());
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormat() {
+        record.setMessage("{0} %s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("hi %s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormatAndNullParameters() {
+        record.setMessage("{0}");
+        record.setParameters(null);
+        assertEquals("{0}", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormatAndEmptyParameters() {
+        record.setMessage("{0}");
+        record.setParameters(new Object[0]);
+        assertEquals("{0}", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithBogusSquigglyFormatAndOkPercentFormat() {
+        // this will fail the squiggly formatting, and fall back to % formatting
+        record.setMessage("{0'}' %s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("{0'}' hi", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormat() {
+        record.setMessage("%s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("hi", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormatAndNullParameters() {
+        record.setMessage("%s");
+        record.setParameters(null);
+        assertEquals("%s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormatAndEmptyParameters() {
+        record.setMessage("%s");
+        record.setParameters(new Object[0]);
+        assertEquals("%s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithBogusPercentFormat() {
+        record.setMessage("%0.5s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("%0.5s", instance.formatMessage(record));
     }
 }
