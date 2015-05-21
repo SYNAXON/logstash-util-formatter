@@ -15,12 +15,15 @@
  */
 package net.logstash.logging.formatter;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
+
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonBuilderFactory;
@@ -55,17 +58,32 @@ public class LogstashUtilFormatter extends Formatter {
         for (final String tag : tags) {
             tagsBuilder.add(tag);
         }
-        String message = formatMessage(record);
+
         return BUILDER
                 .createObjectBuilder()
                 .add("@timestamp", dateString)
-                .add("@message", message)
+                .add("@message", formatMessage(record))
                 .add("@source", record.getLoggerName())
                 .add("@source_host", hostName)
                 .add("@fields", encodeFields(record))
                 .add("@tags", tagsBuilder.build())
                 .build()
                 .toString() + "\n";
+    }
+
+    @Override
+    public synchronized String formatMessage(final LogRecord record) {
+        String message = super.formatMessage(record);
+
+        try {
+            final Object parameters[] = record.getParameters();
+            if (message == record.getMessage() && parameters != null && parameters.length > 0) {
+                message = String.format(message, parameters);
+            }
+        } catch (Exception ex) {
+        }
+
+        return message;
     }
 
     /**
@@ -154,13 +172,8 @@ public class LogstashUtilFormatter extends Formatter {
     }
 
     private void addStacktraceElements(final LogRecord record, final JsonObjectBuilder builder) {
-        final StackTraceElement[] traces = record.getThrown().getStackTrace();
-        if (traces.length > 0) {
-            StringBuilder strace = new StringBuilder();
-            for (StackTraceElement trace : traces) {
-                strace.append("\t").append(trace.toString()).append("\n");
-            }
-            builder.add("stacktrace", strace.toString());
-        }
+        final StringWriter sw = new StringWriter();
+        record.getThrown().printStackTrace(new PrintWriter(sw));
+        builder.add("stacktrace", sw.toString());
     }
 }
