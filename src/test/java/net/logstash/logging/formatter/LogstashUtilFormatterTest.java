@@ -19,12 +19,16 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.ListResourceBundle;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
+
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
+
 import static org.junit.Assert.*;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -33,14 +37,17 @@ import org.junit.Test;
  */
 public class LogstashUtilFormatterTest {
 
-    public static final int LINE_NUMBER = 42;
+    private static final String EXPECTED_EX_STACKTRACE = "java.lang.Exception: That is an exception\n"
+            + "\tat Test.methodTest(Test.class:42)\n"
+            + "Caused by: java.lang.Exception: This is the cause\n"
+            + "\tat Cause.methodCause(Cause.class:69)\n";
+
     private LogRecord record = null;
     private LogstashUtilFormatter instance = new LogstashUtilFormatter();
     private String fullLogMessage = null;
     private JsonObjectBuilder fieldsBuilder;
     private JsonObjectBuilder builder;
-    private JsonObjectBuilder exceptionBuilder;
-    private Exception ex;
+    private Exception ex, cause;
     private static String hostName;
 
     static {
@@ -52,22 +59,30 @@ public class LogstashUtilFormatterTest {
         }
     }
 
+    public static Exception buildException(final String message, final Throwable cause,
+            final StackTraceElement...stackTrace) {
+        final Exception result = new Exception(message, cause);
+        result.setStackTrace(stackTrace);
+        return result;
+    }
+
     /**
      *
      */
     @Before
     public void setUp() {
+        cause = buildException("This is the cause", null,
+                new StackTraceElement("Cause", "methodCause", "Cause.class", 69));
+
+        ex = buildException("That is an exception", cause,
+                new StackTraceElement("Test", "methodTest", "Test.class", 42));
+
         long millis = System.currentTimeMillis();
         record = new LogRecord(Level.ALL, "Junit Test");
         record.setLoggerName(LogstashUtilFormatter.class.getName());
         record.setSourceClassName(LogstashUtilFormatter.class.getName());
         record.setSourceMethodName("testMethod");
         record.setMillis(millis);
-
-        ex = new Exception("That is an exception");
-        StackTraceElement[] stackTrace = new StackTraceElement[1];
-        stackTrace[0] = new StackTraceElement("Test", "methodTest", "Test.class", LINE_NUMBER);
-        ex.setStackTrace(stackTrace);
         record.setThrown(ex);
 
         builder = Json.createBuilderFactory(null).createObjectBuilder();
@@ -81,17 +96,12 @@ public class LogstashUtilFormatterTest {
         fieldsBuilder = Json.createBuilderFactory(null).createObjectBuilder();
         fieldsBuilder.add("timestamp", millis);
         fieldsBuilder.add("level", Level.ALL.toString());
-        fieldsBuilder.add("line_number", LINE_NUMBER);
+        fieldsBuilder.add("line_number", ex.getStackTrace()[0].getLineNumber());
         fieldsBuilder.add("class", LogstashUtilFormatter.class.getName());
         fieldsBuilder.add("method", "testMethod");
         fieldsBuilder.add("exception_class", ex.getClass().getName());
         fieldsBuilder.add("exception_message", ex.getMessage());
-        fieldsBuilder.add("stacktrace", "\t" + stackTrace[0].toString() + "\n");
-
-        exceptionBuilder = Json.createBuilderFactory(null).createObjectBuilder();
-        exceptionBuilder.add("exception_class", ex.getClass().getName());
-        exceptionBuilder.add("exception_message", ex.getMessage());
-        exceptionBuilder.add("stacktrace", "\t" + stackTrace[0].toString() + "\n");
+        fieldsBuilder.add("stacktrace", EXPECTED_EX_STACKTRACE);
 
         builder.add("@fields", fieldsBuilder);
 
@@ -108,7 +118,6 @@ public class LogstashUtilFormatterTest {
      */
     @Test
     public void testFormat() {
-        System.out.println("format");
         String result = instance.format(record);
         assertEquals(fullLogMessage, result);
     }
@@ -127,9 +136,15 @@ public class LogstashUtilFormatterTest {
      */
     @Test
     public void testAddThrowableInfo() {
+        final String expected = Json.createBuilderFactory(null).createObjectBuilder()
+            .add("exception_class", ex.getClass().getName())
+            .add("exception_message", ex.getMessage())
+            .add("stacktrace", EXPECTED_EX_STACKTRACE)
+            .build().toString();
+
         JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
         instance.addThrowableInfo(record, result);
-        assertEquals(exceptionBuilder.build().toString(), result.build().toString());
+        assertEquals(expected, result.build().toString());
     }
 
     /**
@@ -146,23 +161,17 @@ public class LogstashUtilFormatterTest {
      * Test of addThrowableInfo method, of class LogstashFormatter.
      */
     @Test
-    public void testAddThrowableInfoThrowableAttachedButWithoutStackTrace() {
-        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
-        record.getThrown().setStackTrace(new StackTraceElement[0]);
-        instance.addThrowableInfo(record, result);
-        assertEquals("{\"exception_class\":\"java.lang.Exception\",\"exception_message\":\"That is an exception\"}", result.build().toString());
-    }
-
-    /**
-     * Test of addThrowableInfo method, of class LogstashFormatter.
-     */
-    @Test
     public void testAddThrowableInfoThrowableAttachedButWithoutSourceClassName() {
-        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
-        record.getThrown().setStackTrace(new StackTraceElement[0]);
+        final String expected = Json.createBuilderFactory(null).createObjectBuilder()
+                .add("exception_message", ex.getMessage())
+                .add("stacktrace", EXPECTED_EX_STACKTRACE)
+                .build().toString();
+
         record.setSourceClassName(null);
+
+        JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
         instance.addThrowableInfo(record, result);
-        assertEquals("{\"exception_message\":\"That is an exception\"}", result.build().toString());
+        assertEquals(expected, result.build().toString());
     }
 
     /**
@@ -170,11 +179,17 @@ public class LogstashUtilFormatterTest {
      */
     @Test
     public void testAddThrowableInfoThrowableAttachedButWithoutMessage() {
+        final Exception ex2 = buildException(null, null, new StackTraceElement[0]);
+        record.setThrown(ex2);
+
+        final String expected = Json.createBuilderFactory(null).createObjectBuilder()
+                .add("exception_class", ex2.getClass().getName())
+                .add("stacktrace", "java.lang.Exception\n")
+                .build().toString();
+
         JsonObjectBuilder result = Json.createBuilderFactory(null).createObjectBuilder();
-        record.setThrown(new Exception());
-        record.getThrown().setStackTrace(new StackTraceElement[0]);
         instance.addThrowableInfo(record, result);
-        assertEquals("{\"exception_class\":\"java.lang.Exception\"}", result.build().toString());
+        assertEquals(expected, result.build().toString());
     }
 
     /**
@@ -183,7 +198,7 @@ public class LogstashUtilFormatterTest {
     @Test
     public void testGetLineNumber() {
         int result = instance.getLineNumber(record);
-        assertEquals(LINE_NUMBER, result);
+        assertEquals(ex.getStackTrace()[0].getLineNumber(), result);
     }
 
     /**
@@ -221,5 +236,62 @@ public class LogstashUtilFormatterTest {
         JsonObjectBuilder builder = Json.createBuilderFactory(null).createObjectBuilder();
         instance.addValue(builder, "key", null);
         assertEquals("{\"key\":\"null\"}", builder.build().toString());
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormat() {
+        record.setMessage("{0} %s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("hi %s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormatAndNullParameters() {
+        record.setMessage("{0}");
+        record.setParameters(null);
+        assertEquals("{0}", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithSquigglyFormatAndEmptyParameters() {
+        record.setMessage("{0}");
+        record.setParameters(new Object[0]);
+        assertEquals("{0}", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithBogusSquigglyFormatAndOkPercentFormat() {
+        // this will fail the squiggly formatting, and fall back to % formatting
+        record.setMessage("{0'}' %s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("{0'}' hi", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormat() {
+        record.setMessage("%s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("hi", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormatAndNullParameters() {
+        record.setMessage("%s");
+        record.setParameters(null);
+        assertEquals("%s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithPercentFormatAndEmptyParameters() {
+        record.setMessage("%s");
+        record.setParameters(new Object[0]);
+        assertEquals("%s", instance.formatMessage(record));
+    }
+
+    @Test
+    public void testFormatMessageWithBogusPercentFormat() {
+        record.setMessage("%0.5s");
+        record.setParameters(new Object[] { "hi" });
+        assertEquals("%0.5s", instance.formatMessage(record));
     }
 }
