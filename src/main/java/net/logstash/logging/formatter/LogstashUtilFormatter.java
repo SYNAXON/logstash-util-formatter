@@ -26,7 +26,6 @@ import java.util.logging.LogRecord;
 
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
-import javax.json.JsonBuilderFactory;
 import javax.json.JsonObjectBuilder;
 
 /**
@@ -34,8 +33,6 @@ import javax.json.JsonObjectBuilder;
  */
 public class LogstashUtilFormatter extends Formatter {
 
-    private static final JsonBuilderFactory BUILDER =
-            Json.createBuilderFactory(null);
     private static String hostName;
     private static final String[] tags = System.getProperty(
             "net.logstash.logging.formatter.LogstashUtilFormatter.tags", "UNKNOWN").split(",");
@@ -54,13 +51,12 @@ public class LogstashUtilFormatter extends Formatter {
     public final String format(final LogRecord record) {
         final SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
         final String dateString = dateFormat.format(new Date(record.getMillis()));
-        final JsonArrayBuilder tagsBuilder = BUILDER.createArrayBuilder();
+        final JsonArrayBuilder tagsBuilder = Json.createArrayBuilder();
         for (final String tag : tags) {
             tagsBuilder.add(tag);
         }
 
-        return BUILDER
-                .createObjectBuilder()
+        return Json.createObjectBuilder()
                 .add("@timestamp", dateString)
                 .add("@message", formatMessage(record))
                 .add("@source", record.getLoggerName())
@@ -93,7 +89,7 @@ public class LogstashUtilFormatter extends Formatter {
      * @return objectBuilder
      */
     final JsonObjectBuilder encodeFields(final LogRecord record) {
-        JsonObjectBuilder builder = BUILDER.createObjectBuilder();
+        JsonObjectBuilder builder = Json.createObjectBuilder();
         builder.add("timestamp", record.getMillis());
         builder.add("level", record.getLevel().toString());
         builder.add("line_number", getLineNumber(record));
